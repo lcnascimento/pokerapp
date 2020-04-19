@@ -1,4 +1,4 @@
-defmodule UsersService.Infra.Support do
+defmodule UsersService.Infra.MapHelper do
   @doc """
   Convert map string camelCase keys to underscore_keys
   """
