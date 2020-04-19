@@ -1,1 +1,29 @@
 version: "3.5"
+services:
+  localstack:
+    image: localstack/localstack:0.11.0
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=kinesis
+      - DEBUG=1
+      - DATA_DIR=/localstack/data
+    volumes:
+      - "localstack-data:/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    container_name: "poker_app_localstack"
+
+  cassandra1:
+    image: cassandra
+    container_name: cassandra1
+    ports:
+      - "7001:7000"
+      - "9043:9042"
+    volumes:
+      - "cassandra1-data:/var/lib/cassandra"
+      - "./users_service/config/init_cassandra.sql:/seed/users_service.sql"
+    container_name: poker_app_cassandra1
+
+volumes:
+  localstack-data:
+  cassandra1-data:
