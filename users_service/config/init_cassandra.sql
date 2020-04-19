@@ -11,6 +11,6 @@ CREATE TABLE IF NOT EXISTS "users" (
   aggregate_id TEXT,
   event_time TIMESTAMP,
   event_type TEXT,
-  payload TEXT,
+  payload MAP<TEXT,TEXT>,
   PRIMARY KEY(row_id, aggregate_id, event_time)
 );
