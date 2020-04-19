@@ -9,7 +9,7 @@ defmodule UsersService.Infra.Eventstore do
     GenServer.start(__MODULE__, default)
   end
 
-  @spec insert(pid :: pid(), event :: Event.t()) :: any()
+  @spec insert(pid :: pid(), event :: Event.t()) :: :ok
   def insert(pid, event) do
     GenServer.call(pid, {:insert, event})
   end
@@ -31,18 +31,18 @@ defmodule UsersService.Infra.Eventstore do
   @impl GenServer
   def handle_call({:insert, event}, _from, %{conn: conn} = state) do
     statement =
-      "INSERT INTO users_service.users(row_id, aggregate_id, event_time, event_type, payload) VALUES (?, ?, ?, ?, ?)"
+      "INSERT INTO users_service.users(row_id, aggregate_id, timestamp, action, payload) VALUES (?, ?, ?, ?, ?)"
 
-    {:ok, response} =
+    {:ok, _} =
       Xandra.execute(conn, statement, [
         {"text", event.row_id},
         {"text", event.aggregate_id},
         {"timestamp", event.timestamp},
-        {"text", event.type},
-        {"map<text,text>", event.payload}
+        {"text", event.action},
+        {"blob", event.payload}
       ])
 
-    {:reply, response, state}
+    {:reply, :ok, state}
   end
 
   @impl GenServer

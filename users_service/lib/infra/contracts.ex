@@ -1,12 +1,12 @@
 defmodule UsersService.Infra do
   defmodule Event do
-    defstruct [:row_id, :aggregate_id, :type, :payload, :timestamp]
+    defstruct [:row_id, :aggregate_id, :action, :payload, :timestamp]
 
     @type t :: %Event{
             row_id: String.t(),
             aggregate_id: String.t(),
-            type: String.t(),
-            payload: map(),
+            action: String.t(),
+            payload: binary(),
             timestamp: Time.t()
           }
   end

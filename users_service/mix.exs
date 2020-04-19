@@ -21,7 +21,8 @@ defmodule UsersService.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:xandra, "~> 0.11"}
+      {:xandra, "~> 0.11"},
+      {:poison, "~> 3.1"}
     ]
   end
 end

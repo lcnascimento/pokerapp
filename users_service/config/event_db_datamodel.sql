@@ -9,8 +9,8 @@ USE users_service;
 CREATE TABLE IF NOT EXISTS "users" (
   row_id TEXT,
   aggregate_id TEXT,
-  event_time TIMESTAMP,
-  event_type TEXT,
-  payload MAP<TEXT,TEXT>,
-  PRIMARY KEY(row_id, aggregate_id, event_time)
+  timestamp TIMESTAMP,
+  action TEXT,
+  payload BLOB,
+  PRIMARY KEY(row_id, aggregate_id, timestamp)
 );
