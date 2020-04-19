@@ -23,3 +23,5 @@ erl_crash.dump
 users_service-*.tar
 
 .env
+
+debug.exs

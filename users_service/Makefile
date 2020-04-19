@@ -13,5 +13,9 @@ tests:
 	@ echo
 	@ mix test --trace --exclude skip:true
 
+
+debug:
+	@ mix run debug.exs
+
 %:
 	@:
