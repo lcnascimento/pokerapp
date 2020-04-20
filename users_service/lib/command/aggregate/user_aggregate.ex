@@ -45,7 +45,7 @@ defmodule UsersService.Command.User do
   @spec update(es_pid :: pid(), old :: User.t(), new :: User.t()) :: {:ok, User.t()}
   def update(es_pid, old, new) do
     diff =
-      Map.keys(old
+      Map.keys(old)
       |> Enum.filter(fn key -> Map.get(old, key) != Map.get(new, key) and key != :cpf end)
       |> Enum.map(fn key -> {key, Map.get(new, key)} end)
       |> Enum.into(%{})

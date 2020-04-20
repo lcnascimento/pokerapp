@@ -14,6 +14,11 @@ defmodule UsersService.Infra.Eventstore do
     GenServer.call(pid, {:insert, event})
   end
 
+  @spec bulk_insert(pid :: pid(), events :: [Event.t()]) :: :ok
+  def bulk_insert(pid, events) do
+    GenServer.call(pid, {:bulk_insert, events})
+  end
+
   @spec stream(pid :: pid(), row_id :: String.t(), agg_id :: String.t()) :: any()
   def stream(pid, row_id \\ nil, agg_id \\ nil) do
     GenServer.call(pid, {:stream, row_id, agg_id})
@@ -26,23 +31,6 @@ defmodule UsersService.Infra.Eventstore do
     {:ok, conn} = Xandra.start_link(nodes: cassandra_nodes())
 
     {:ok, Map.put(state, :conn, conn)}
-  end
-
-  @impl GenServer
-  def handle_call({:insert, event}, _from, %{conn: conn} = state) do
-    statement =
-      "INSERT INTO users_service.users(row_id, aggregate_id, timestamp, action, payload) VALUES (?, ?, ?, ?, ?)"
-
-    {:ok, _} =
-      Xandra.execute(conn, statement, [
-        {"text", event.row_id},
-        {"text", event.aggregate_id},
-        {"timestamp", event.timestamp},
-        {"text", event.action},
-        {"blob", event.payload}
-      ])
-
-    {:reply, :ok, state}
   end
 
   @impl GenServer
@@ -76,6 +64,51 @@ defmodule UsersService.Infra.Eventstore do
     stream = Xandra.stream_pages!(conn, statement, [row_id, agg_id], page_size: 1_000)
 
     {:reply, stream, state}
+  end
+
+  @impl GenServer
+  def handle_call({:insert, event}, _from, %{conn: conn} = state) do
+    statement = prepare_insert_statement(conn)
+    Xandra.execute!(conn, statement, insert_event_params(event))
+
+    {:reply, :ok, state}
+  end
+
+  @impl GenServer
+  def handle_call({:bulk_insert, events}, _from, %{conn: conn} = state) do
+    statement = prepare_insert_statement(conn)
+
+    batch =
+      events
+      |> Stream.with_index(1)
+      |> Enum.map(fn {event, idx} ->
+        Map.put(event, :timestamp, DateTime.add(event.timestamp, idx, :millisecond))
+      end)
+      |> Enum.reduce(
+        Xandra.Batch.new(),
+        &Xandra.Batch.add(&2, statement, insert_event_params(&1))
+      )
+
+    Xandra.execute!(conn, batch)
+
+    {:reply, :ok, state}
+  end
+
+  defp prepare_insert_statement(conn) do
+    statement =
+      "INSERT INTO users_service.users(row_id, aggregate_id, timestamp, action, payload) VALUES (?, ?, ?, ?, ?)"
+
+    Xandra.prepare!(conn, statement)
+  end
+
+  defp insert_event_params(event) do
+    [
+      event.row_id,
+      event.aggregate_id,
+      event.timestamp,
+      event.action,
+      event.payload
+    ]
   end
 
   defp cassandra_nodes do
