@@ -6,22 +6,22 @@ defmodule UsersService.Infra.Eventstore do
   # Client side
 
   def start_link(default \\ %{}) do
-    GenServer.start(__MODULE__, default)
+    GenServer.start_link(__MODULE__, default, name: __MODULE__)
   end
 
-  @spec insert(pid :: pid(), event :: Event.t()) :: :ok
-  def insert(pid, event) do
-    GenServer.call(pid, {:insert, event})
+  @spec insert(event :: Event.t()) :: :ok
+  def insert(event) do
+    GenServer.call(__MODULE__, {:insert, event})
   end
 
-  @spec bulk_insert(pid :: pid(), events :: [Event.t()]) :: :ok
-  def bulk_insert(pid, events) do
-    GenServer.call(pid, {:bulk_insert, events})
+  @spec bulk_insert(events :: [Event.t()]) :: :ok
+  def bulk_insert(events) do
+    GenServer.call(__MODULE__, {:bulk_insert, events})
   end
 
-  @spec stream(pid :: pid(), row_id :: String.t(), agg_id :: String.t()) :: any()
-  def stream(pid, row_id \\ nil, agg_id \\ nil) do
-    GenServer.call(pid, {:stream, row_id, agg_id})
+  @spec stream(row_id :: String.t(), agg_id :: String.t()) :: any()
+  def stream(row_id \\ nil, agg_id \\ nil) do
+    GenServer.call(__MODULE__, {:stream, row_id, agg_id})
   end
 
   # Server side

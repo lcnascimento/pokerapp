@@ -4,10 +4,10 @@ defmodule UsersService.Command.NicknameRepository do
 
   alias UsersService.Command.Nickname
 
-  @spec get(es_pid :: pid(), nickname :: String.t()) :: {:ok, Nickname.t()}
-  def get(es_pid, nickname) do
+  @spec get(nickname :: String.t()) :: {:ok, Nickname.t()}
+  def get(nickname) do
     result =
-      Eventstore.stream(es_pid, "#{nickname}:NicknameAggregate")
+      Eventstore.stream("#{nickname}:NicknameAggregate")
       |> Enum.reduce([], &Enum.concat(&1, Enum.to_list(&2)))
       |> Enum.map(&Map.put(&1, "payload", Poison.decode!(&1["payload"])))
       |> Enum.map(&MapHelper.atomize_keys/1)

@@ -1,18 +1,15 @@
 defmodule UsersService do
-  @moduledoc """
-  Documentation for `UsersService`.
-  """
+  alias UsersService.Command
+  alias UsersService.Infra
 
-  @doc """
-  Hello world.
+  use Application
 
-  ## Examples
+  def start(_type, _args) do
+    children = [
+      {Command.Supervisor, []},
+      {Infra.Supervisor, []}
+    ]
 
-      iex> UsersService.hello()
-      :world
-
-  """
-  def hello do
-    :world
+    Supervisor.start_link(children, strategy: :one_for_one)
   end
 end

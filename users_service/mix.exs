@@ -14,6 +14,7 @@ defmodule UsersService.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      mod: {UsersService, []},
       extra_applications: [:logger]
     ]
   end

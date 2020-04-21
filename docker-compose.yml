@@ -21,7 +21,7 @@ services:
       - "9043:9042"
     volumes:
       - "cassandra1-data:/var/lib/cassandra"
-      - "./users_service/config/init_cassandra.sql:/seed/users_service.sql"
+      - "./users_service/config/event_db_datamodel.sql:/seed/users_service.sql"
     container_name: poker_app_cassandra1
 
 volumes:
