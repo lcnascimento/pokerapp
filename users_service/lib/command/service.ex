@@ -26,9 +26,9 @@ defmodule UsersService.Command.Service do
     GenServer.call(__MODULE__, {:update, user})
   end
 
-  @spec remove(user_id :: String.t()) :: :ok
-  def remove(user_id) do
-    GenServer.call(__MODULE__, {:remove, user_id})
+  @spec remove(cpf :: String.t()) :: :ok
+  def remove(cpf) do
+    GenServer.call(__MODULE__, {:remove, cpf})
   end
 
   # Server side
@@ -39,15 +39,15 @@ defmodule UsersService.Command.Service do
   end
 
   @impl GenServer
-  def handle_call({:create, %{nickname: nickname, cpf: cpf} = user}, _from, state) do
-    events = [Nickname.pick(user, nickname), User.create(user)]
+  def handle_call({:create, user}, _from, state) do
+    {response, events} =
+      {nil, [], %{}}
+      |> check_nickname_availability(user)
+      |> check_user_inexistence(user)
+      |> build_success_response_if_empty()
 
-    response =
-      {:ok, user}
-      |> check_nickname_availability(nickname)
-      |> check_user_inexistence(cpf)
-      |> persist_events_into_eventstore(events)
-      |> persist_events_into_event_stream(events)
+    :ok = GenServer.call(Eventstore, {:bulk_insert, events})
+    :ok = GenServer.call(EventStream, {:bulk_insert, events})
 
     {:reply, response, state}
   end
@@ -58,47 +58,72 @@ defmodule UsersService.Command.Service do
   end
 
   @impl GenServer
-  def handle_call({:remove, _user_id}, _from, state) do
-    {:reply, :ok, state}
-  end
+  def handle_call({:remove, cpf}, _from, state) do
+    {response, events} =
+      {nil, [], %{}}
+      |> check_user_existence(cpf)
+      |> build_remove_user_events()
+      |> build_success_response_if_empty()
 
-  defp persist_events_into_eventstore({:ok, _} = response, events) do
     :ok = GenServer.call(Eventstore, {:bulk_insert, events})
-    response
-  end
-
-  defp persist_events_into_eventstore({:error, _, _} = response, _events) do
-    response
-  end
-
-  defp persist_events_into_event_stream({:ok, _} = response, events) do
     :ok = GenServer.call(EventStream, {:bulk_insert, events})
-    response
+
+    {:reply, response, state}
   end
 
-  defp persist_events_into_event_stream({:error, _, _} = response, _events) do
-    response
+  defp check_nickname_availability({{:error, _reason, _msg}, _events, _ctx} = state, _user) do
+    state
   end
 
-  defp check_nickname_availability(response, nickname) do
+  defp check_nickname_availability({res, events, ctx}, %{nickname: nickname, cpf: cpf}) do
     {:ok, nick} = NicknameRepository.get(nickname)
 
     case nick do
-      nil -> response
-      _ -> {:error, :bad_request, "nickname unavailable"}
+      nil -> {res, Enum.concat(events, [Nickname.pick(cpf, nickname)]), ctx}
+      _ -> {{:error, :bad_request, "nickname unavailable"}, [], ctx}
     end
   end
 
-  defp check_user_inexistence({:ok, _} = response, cpf) do
+  defp check_user_inexistence({{:error, _reason, _msg}, _events, _ctx} = state, _user) do
+    state
+  end
+
+  defp check_user_inexistence({res, events, ctx}, %{cpf: cpf} = user) do
+    {:ok, u} = UserRepository.get(cpf)
+
+    case u do
+      nil -> {res, Enum.concat(events, [User.create(user)]), ctx}
+      _ -> {{:error, :bad_request, "given user already exists"}, [], ctx}
+    end
+  end
+
+  defp check_user_existence({{:error, _reason, _msg}, _events, _ctx} = state, _cpf) do
+    state
+  end
+
+  defp check_user_existence({res, events, ctx}, cpf) do
     {:ok, user} = UserRepository.get(cpf)
 
     case user do
-      nil -> response
-      _ -> {:error, :bad_request, "given user already exists"}
+      nil -> {{:error, :bad_request, "user does not exists"}, []}
+      _ -> {res, events, Map.put(ctx, :user, user)}
     end
   end
 
-  defp check_user_inexistence({:error, reason, message}, _) do
-    {:error, reason, message}
+  defp build_remove_user_events({{:error, _reason, _msg}, _events, _ctx} = state) do
+    state
+  end
+
+  defp build_remove_user_events({res, events, %{user: %{cpf: cpf, nickname: nickname}} = ctx}) do
+    remove_events = [Nickname.release(cpf, nickname), User.remove(cpf)]
+    {res, Enum.concat(events, remove_events), ctx}
+  end
+
+  defp build_success_response_if_empty({nil, events, _ctx}) do
+    {:ok, events}
+  end
+
+  defp build_success_response_if_empty({res, events, _ctx}) do
+    {res, events}
   end
 end

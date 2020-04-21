@@ -40,13 +40,13 @@ defmodule UsersService.Command.User do
     }
   end
 
-  @spec remove(user :: User.t()) :: Event.t()
-  def remove(user) do
+  @spec remove(cpf :: User.t()) :: Event.t()
+  def remove(cpf) do
     %Event{
       row_id: "UserAggregate",
-      aggregate_id: user.cpf,
+      aggregate_id: cpf,
       action: "user-deleted",
-      payload: Poison.encode!(%{}),
+      payload: Poison.encode!(%{cpf: cpf}),
       timestamp: DateTime.utc_now()
     }
   end

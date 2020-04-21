@@ -75,6 +75,11 @@ defmodule UsersService.Infra.Eventstore do
   end
 
   @impl GenServer
+  def handle_call({:bulk_insert, []}, _from, state) do
+    {:reply, :ok, state}
+  end
+
+  @impl GenServer
   def handle_call({:bulk_insert, events}, _from, %{conn: conn} = state) do
     statement = prepare_insert_statement(conn)
 
