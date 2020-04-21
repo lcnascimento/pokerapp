@@ -15,7 +15,7 @@ defmodule UsersService.Command.User do
   @spec create(user :: User.t()) :: Event.t()
   def create(user) do
     %Event{
-      row_id: "UserAggregate",
+      row_id: "#{user.cpf}:UserAggregate",
       aggregate_id: user.cpf,
       action: "user-created",
       payload: Poison.encode!(user),
@@ -26,7 +26,7 @@ defmodule UsersService.Command.User do
   @spec update(cpf :: String.t(), new :: map()) :: Event.t()
   def update(cpf, diff) do
     %Event{
-      row_id: "UserAggregate",
+      row_id: "#{cpf}:UserAggregate",
       aggregate_id: cpf,
       action: "user-updated",
       payload: Poison.encode!(diff),
@@ -37,7 +37,7 @@ defmodule UsersService.Command.User do
   @spec remove(cpf :: User.t()) :: Event.t()
   def remove(cpf) do
     %Event{
-      row_id: "UserAggregate",
+      row_id: "#{cpf}:UserAggregate",
       aggregate_id: cpf,
       action: "user-deleted",
       payload: Poison.encode!(%{cpf: cpf}),

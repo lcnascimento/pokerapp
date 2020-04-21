@@ -10,24 +10,24 @@ defmodule UsersService.Command.Nickname do
           owner_cpf: String.t()
         }
 
-  @spec pick(cpf :: String.t(), value :: Nickname.t()) :: Event.t()
-  def pick(cpf, value) do
+  @spec pick(cpf :: String.t(), nickname :: Nickname.t()) :: Event.t()
+  def pick(cpf, nickname) do
     %Event{
-      row_id: "#{cpf}:NicknameAggregate",
-      aggregate_id: value,
+      row_id: "#{nickname}:NicknameAggregate",
+      aggregate_id: cpf,
       action: "nickname-picked",
-      payload: Poison.encode!(%{value: value, owner_cpf: cpf}),
+      payload: Poison.encode!(%{value: nickname, owner_cpf: cpf}),
       timestamp: DateTime.utc_now()
     }
   end
 
-  @spec release(cpf :: String.t(), value :: Nickname.t()) :: Event.t()
-  def release(cpf, value) do
+  @spec release(cpf :: String.t(), nickname :: Nickname.t()) :: Event.t()
+  def release(cpf, nickname) do
     %Event{
-      row_id: "#{value}:NicknameAggregate",
+      row_id: "#{nickname}:NicknameAggregate",
       aggregate_id: cpf,
       action: "nickname-released",
-      payload: Poison.encode!(%{value: value, old_owner_cpf: cpf}),
+      payload: Poison.encode!(%{value: nickname, old_owner_cpf: cpf}),
       timestamp: DateTime.utc_now()
     }
   end

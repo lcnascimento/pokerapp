@@ -114,12 +114,12 @@ defmodule UsersService.Command.Service do
     {:ok, user} = UserRepository.get(cpf)
 
     case user do
-      nil -> {{:error, :bad_request, "user does not exists"}, []}
+      nil -> {{:error, :bad_request, "user does not exists"}, [], ctx}
       _ -> {res, events, Map.put(ctx, :user, user)}
     end
   end
 
-  defp build_update_user_events({{:error, _reason, _msg}, _events, _ctx} = state) do
+  defp build_update_user_events({{:error, _reason, _msg}, _events, _ctx} = state, _user) do
     state
   end
 
