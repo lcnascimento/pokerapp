@@ -1,7 +1,6 @@
 defmodule UsersService.Command.Nickname do
   alias UsersService.Infra.Event
 
-  alias UsersService.Command.User
   alias UsersService.Command.Nickname
 
   defstruct [:value, :owner_cpf]

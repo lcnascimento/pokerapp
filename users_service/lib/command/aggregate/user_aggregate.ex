@@ -23,17 +23,11 @@ defmodule UsersService.Command.User do
     }
   end
 
-  @spec update(old :: User.t(), new :: User.t()) :: Event.t()
-  def update(old, new) do
-    diff =
-      Map.keys(old)
-      |> Enum.filter(fn key -> Map.get(old, key) != Map.get(new, key) and key != :cpf end)
-      |> Enum.map(fn key -> {key, Map.get(new, key)} end)
-      |> Enum.into(%{})
-
+  @spec update(cpf :: String.t(), new :: map()) :: Event.t()
+  def update(cpf, diff) do
     %Event{
       row_id: "UserAggregate",
-      aggregate_id: old.cpf,
+      aggregate_id: cpf,
       action: "user-updated",
       payload: Poison.encode!(diff),
       timestamp: DateTime.utc_now()

@@ -40,7 +40,7 @@ defmodule UsersService.Command.Service do
 
   @impl GenServer
   def handle_call({:create, user}, _from, state) do
-    {response, events} =
+    {response, events, _ctx} =
       {nil, [], %{}}
       |> check_nickname_availability(user)
       |> check_user_inexistence(user)
@@ -53,13 +53,22 @@ defmodule UsersService.Command.Service do
   end
 
   @impl GenServer
-  def handle_call({:update, user}, _from, state) do
-    {:reply, {:ok, user}, state}
+  def handle_call({:update, %{cpf: cpf} = user}, _from, state) do
+    {response, events, _ctx} =
+      {nil, [], %{}}
+      |> check_user_existence(cpf)
+      |> build_update_user_events(user)
+      |> build_success_response_if_empty()
+
+    :ok = GenServer.call(Eventstore, {:bulk_insert, events})
+    :ok = GenServer.call(EventStream, {:bulk_insert, events})
+
+    {:reply, response, state}
   end
 
   @impl GenServer
   def handle_call({:remove, cpf}, _from, state) do
-    {response, events} =
+    {response, events, _ctx} =
       {nil, [], %{}}
       |> check_user_existence(cpf)
       |> build_remove_user_events()
@@ -110,6 +119,36 @@ defmodule UsersService.Command.Service do
     end
   end
 
+  def build_update_user_events({{:error, _reason, _msg}, _events, _ctx} = state) do
+    state
+  end
+
+  def build_update_user_events({res, events, %{user: old} = ctx}, %{cpf: cpf} = new) do
+    diff =
+      Map.keys(old)
+      |> Enum.filter(fn key -> Map.get(old, key) != Map.get(new, key) and key != :cpf end)
+      |> Enum.map(fn key -> {key, Map.get(new, key)} end)
+      |> Enum.into(%{})
+
+    diff_events =
+      case diff do
+        %{nickname: _nickname} ->
+          [
+            Nickname.release(cpf, old.nickname),
+            Nickname.pick(cpf, new.nickname),
+            User.update(cpf, diff)
+          ]
+
+        d when d == %{} ->
+          []
+
+        _ ->
+          [User.update(cpf, diff)]
+      end
+
+    {res, Enum.concat(events, diff_events), ctx}
+  end
+
   defp build_remove_user_events({{:error, _reason, _msg}, _events, _ctx} = state) do
     state
   end
@@ -119,11 +158,11 @@ defmodule UsersService.Command.Service do
     {res, Enum.concat(events, remove_events), ctx}
   end
 
-  defp build_success_response_if_empty({nil, events, _ctx}) do
-    {:ok, events}
+  defp build_success_response_if_empty({nil, events, ctx}) do
+    {:ok, events, ctx}
   end
 
-  defp build_success_response_if_empty({res, events, _ctx}) do
-    {res, events}
+  defp build_success_response_if_empty(state) do
+    state
   end
 end
