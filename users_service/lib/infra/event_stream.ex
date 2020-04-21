@@ -33,13 +33,13 @@ defmodule UsersService.Infra.EventStream do
 
   @impl GenServer
   def handle_call({:insert, event}, _from, state) do
-    IO.puts("inserting event into stream: #{event}")
+    IO.puts("inserting event into stream: #{Poison.encode!(event)}")
     {:reply, :ok, state}
   end
 
   @impl GenServer
   def handle_call({:bulk_insert, events}, _from, state) do
-    IO.puts("inserting events into stream: #{events}")
+    IO.puts("inserting events into stream: #{Poison.encode!(events)}")
     {:reply, :ok, state}
   end
 
