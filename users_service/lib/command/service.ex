@@ -119,11 +119,11 @@ defmodule UsersService.Command.Service do
     end
   end
 
-  def build_update_user_events({{:error, _reason, _msg}, _events, _ctx} = state) do
+  defp build_update_user_events({{:error, _reason, _msg}, _events, _ctx} = state) do
     state
   end
 
-  def build_update_user_events({res, events, %{user: old} = ctx}, %{cpf: cpf} = new) do
+  defp build_update_user_events({res, events, %{user: old} = ctx}, %{cpf: cpf} = new) do
     diff =
       Map.keys(old)
       |> Enum.filter(fn key -> Map.get(old, key) != Map.get(new, key) and key != :cpf end)
